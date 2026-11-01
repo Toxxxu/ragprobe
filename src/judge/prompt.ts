@@ -2,7 +2,7 @@ import { JudgeError } from '../core/errors.js';
 import type { JudgeVerdict } from '../core/types.js';
 import type { JudgeInput } from './types.js';
 
-/** Upper bound on context characters sent to the judge, to stay inside small-model context windows. */
+/** Maximum number of context characters sent to the judge. */
 const MAX_CONTEXT_CHARS = 12_000;
 
 export const JUDGE_SYSTEM_PROMPT = `You are a strict evaluator of retrieval-augmented answers.
@@ -68,7 +68,7 @@ function toScore(value: unknown, field: string): number {
   return (Math.round(n) - 1) / 4;
 }
 
-/** Small models sometimes wrap JSON in prose or code fences; take the outermost object. */
+/** Extracts the outermost JSON object from text that may include prose or code fences. */
 function extractJsonObject(raw: string): string {
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');

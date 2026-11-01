@@ -3,9 +3,8 @@ import { DatasetError, RagprobeError, type DatasetIssue } from '../core/errors.j
 import type { TestCase } from '../core/types.js';
 
 /**
- * Loads a JSONL dataset. One test case per line; blank lines and lines
- * starting with `#` are ignored. All problems are collected and reported
- * together so a broken file can be fixed in one pass.
+ * Loads a JSONL dataset with one test case per line. Blank lines and lines
+ * starting with `#` are ignored. Throws with every invalid line at once.
  */
 export async function loadDataset(file: string): Promise<TestCase[]> {
   let text: string;

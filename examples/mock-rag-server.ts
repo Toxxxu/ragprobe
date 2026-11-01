@@ -3,7 +3,7 @@
  * retrieval over a tiny corpus and an extractive "answer" (first sentence
  * of the best document). No LLM, no network, fully deterministic.
  *
- *   npm run example:server   ->  POST http://localhost:4010/query
+ *   pnpm run example:server   ->  POST http://localhost:4010/query
  */
 import { createServer } from 'node:http';
 

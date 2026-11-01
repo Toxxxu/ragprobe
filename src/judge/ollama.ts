@@ -7,14 +7,14 @@ import type { Judge, JudgeInput } from './types.js';
 export interface OllamaJudgeOptions {
   readonly model?: string;
   readonly baseUrl?: string;
-  /** Context window. 8k keeps an 8B model fully on an 8 GB GPU. */
+  /** Context window size in tokens. Defaults to 8192. */
   readonly numCtx?: number;
-  /** Retries on transport errors and malformed output. */
+  /** Retries after a transport error or malformed output. */
   readonly retries?: number;
   readonly fetch?: typeof fetch;
 }
 
-/** LLM-as-judge backed by a local Ollama server. Free and offline. */
+/** LLM-as-judge backed by a local Ollama server. */
 export class OllamaJudge implements Judge {
   readonly name: string;
   readonly #model: string;
@@ -36,11 +36,7 @@ export class OllamaJudge implements Judge {
     return withRetry(() => this.#evaluateOnce(input, signal), { retries: this.#retries, signal });
   }
 
-  /**
-   * Loads the model with the same context size the judge uses. A cold load can
-   * take minutes, far longer than a per-call timeout, and a different num_ctx
-   * would force Ollama to reload the model on the first real request.
-   */
+  /** Loads the model into memory with the context size used for judging. */
   async warmUp({ signal }: { signal: AbortSignal }): Promise<void> {
     const res = await this.#fetch(`${this.#baseUrl}/api/generate`, {
       method: 'POST',

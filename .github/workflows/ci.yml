@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          standalone: true  # pnpm 11 needs Node 22.13+; this lets the Node 20 job run
+          standalone: true
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          standalone: true  # pnpm 11 needs Node 22.13+; this lets the Node 20 job run
+          standalone: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,7 +41,7 @@ jobs:
       - name: Start mock RAG server
         run: pnpm run example:server &
       - name: Wait for server
-        run: npx --yes wait-on http://localhost:4010/health
+        run: pnpm dlx wait-on http://localhost:4010/health
       - name: Evaluate (fails the build if thresholds are not met)
         run: pnpm run example:eval -- --min-recall 0.6 --min-mrr 0.5
       - uses: actions/upload-artifact@v4

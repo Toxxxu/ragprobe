@@ -3,10 +3,7 @@ import type { RetrievalScores } from '../core/types.js';
 /**
  * Retrieval metrics with binary relevance. All functions take the
  * retrieved IDs in rank order and only consider the top `k`.
- *
- * Duplicate IDs are collapsed to their first occurrence: many pipelines
- * return several chunks of the same document, and counting each chunk as
- * a separate hit would inflate precision and nDCG.
+ * Duplicate IDs count once, at their first position.
  */
 
 export function topK(retrievedIds: readonly string[], k: number): string[] {

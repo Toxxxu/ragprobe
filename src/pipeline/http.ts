@@ -39,7 +39,6 @@ export class HttpPipeline implements RagPipeline {
       });
     } catch (err) {
       if (signal.aborted) throw err;
-      // Node's fetch reports every network failure as "fetch failed"; the cause says why.
       const cause = (err as { cause?: { code?: string; message?: string } }).cause;
       const reason = cause?.code ?? cause?.message ?? (err as Error).message;
       throw new PipelineError(`cannot reach pipeline at ${this.#opts.url} (${reason})`);

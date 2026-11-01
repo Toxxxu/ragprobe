@@ -23,9 +23,8 @@ export interface RunOptions {
 }
 
 /**
- * Runs every test case through the pipeline (and optional judge).
- * A failing case never aborts the run: errors are recorded per case
- * so one flaky request can't hide the results of the other 499.
+ * Runs every test case through the pipeline and the optional judge.
+ * Errors are recorded per case and do not abort the run.
  */
 export async function runEvaluation(cases: readonly TestCase[], opts: RunOptions): Promise<RunReport> {
   const { pipeline, judge, k = 5, concurrency = 4, timeoutMs = 30_000, signal, onResult, now = performance.now.bind(performance) } = opts;

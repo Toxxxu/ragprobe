@@ -20,7 +20,6 @@ export async function writeReports(dir: string, report: RunReport, gate?: GateRe
     writeFile(markdown, md),
   ]);
 
-  // Shows the report on the GitHub Actions run page with no extra setup.
   const stepSummary = process.env['GITHUB_STEP_SUMMARY'];
   if (stepSummary) await appendFile(stepSummary, md + '\n');
 

@@ -171,8 +171,6 @@ function fraction(raw: string, flag: string): number {
   return n;
 }
 
-// `pnpm run <script> -- --flag` forwards the `--` literally, which would turn every
-// later flag into a positional and silently drop it (including quality gates).
 main(process.argv.slice(2).filter((arg) => arg !== '--')).then(
   (code) => {
     process.exitCode = code;

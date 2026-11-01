@@ -35,8 +35,8 @@ The bundled demo pipeline uses keyword retrieval, and the report shows exactly w
 
 ```bash
 pnpm install
-npm run example:server        # terminal 1: a tiny deterministic RAG service
-npm run example:eval          # terminal 2: evaluate it
+pnpm run example:server        # terminal 1: a tiny deterministic RAG service
+pnpm run example:eval          # terminal 2: evaluate it
 ```
 
 ### With an LLM judge (local, free)
@@ -44,19 +44,19 @@ npm run example:eval          # terminal 2: evaluate it
 Start Ollama in Docker. On first start, the `models` service pulls the judge model into a cached volume:
 
 ```bash
-npm run ollama:up          # NVIDIA GPU
-npm run ollama:up:cpu      # no GPU (slower)
-npm run ollama:logs        # watch the model download
+pnpm run ollama:up          # NVIDIA GPU
+pnpm run ollama:up:cpu      # no GPU (slower)
+pnpm run ollama:logs        # watch the model download
 ```
 
 Then evaluate with the judge:
 
 ```bash
-npm run dev -- run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
+pnpm run dev -- run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
   --judge ollama --judge-model qwen3:8b --min-faithfulness 0.7
 ```
 
-To pull different models, set `JUDGE_MODELS="qwen3:8b llama3.2:3b" npm run ollama:up`. A native Ollama install works too; ragprobe only needs `http://localhost:11434`.
+To pull different models, set `JUDGE_MODELS="qwen3:8b llama3.2:3b" pnpm run ollama:up`. A native Ollama install works too; ragprobe only needs `http://localhost:11434`.
 
 An 8B model at 4-bit quantisation with an 8k context fits on an 8 GB GPU. On smaller machines, use `llama3.2:3b`. To confirm the GPU is in use, run `docker compose exec ollama ollama ps`: the PROCESSOR column should read `100% GPU`.
 
@@ -150,9 +150,9 @@ Exit codes: `0` passed, `1` quality gate failed, `2` usage or runtime error.
 ## Development
 
 ```bash
-npm test           # node:test via tsx
-npm run typecheck
-npm run build
+pnpm test           # node:test via tsx
+pnpm run typecheck
+pnpm run build
 ```
 
 ## Roadmap
