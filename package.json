@@ -1,0 +1,49 @@
+{
+  "name": "ragprobe",
+  "version": "0.1.0",
+  "description": "Evaluate any RAG pipeline: retrieval metrics, LLM-as-judge scoring, and CI quality gates. Zero runtime dependencies, runs fully offline with Ollama.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "ragprobe": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "dev": "tsx src/cli.ts",
+    "example:server": "tsx examples/mock-rag-server.ts",
+    "ollama:up": "docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d",
+    "ollama:up:cpu": "docker compose up -d",
+    "ollama:logs": "docker compose logs -f models",
+    "ollama:down": "docker compose down",
+    "example:eval": "tsx src/cli.ts run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query --k 3 --out reports"
+  },
+  "keywords": [
+    "rag",
+    "llm",
+    "evaluation",
+    "retrieval",
+    "ollama",
+    "llm-as-judge"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.0"
+  }
+}
