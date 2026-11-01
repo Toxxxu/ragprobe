@@ -1,0 +1,10 @@
+# One test case per line. relevantDocIds = documents a perfect retriever returns.
+{"id": "refund-window", "question": "How many days do I have to request a refund?", "relevantDocIds": ["refund-policy"], "referenceAnswer": "Within 30 days of purchase.", "tags": ["billing"]}
+{"id": "refund-speed", "question": "When will my refund arrive?", "relevantDocIds": ["refund-policy"], "referenceAnswer": "Within 5 business days, to the original payment method.", "tags": ["billing"]}
+{"id": "eu-shipping", "question": "How long does standard shipping take in the EU?", "relevantDocIds": ["shipping-times"], "tags": ["shipping"]}
+{"id": "shipping-all", "question": "What are all the shipping options and delivery times?", "relevantDocIds": ["shipping-times", "shipping-international"], "tags": ["shipping", "multi-doc"]}
+{"id": "reset-password", "question": "I forgot my password, how do I reset it?", "relevantDocIds": ["password-reset"], "tags": ["account"]}
+{"id": "secure-account", "question": "How can I make my login more secure?", "relevantDocIds": ["two-factor"], "tags": ["account", "paraphrase"]}
+{"id": "pro-price", "question": "What does the Pro plan cost per year?", "relevantDocIds": ["plan-pricing"], "referenceAnswer": "120 euros per year.", "tags": ["billing"]}
+{"id": "stop-paying", "question": "I want to stop paying, what happens to my access?", "relevantDocIds": ["plan-cancel"], "tags": ["billing", "paraphrase"]}
+{"id": "download-data", "question": "Can I download everything you store about me?", "relevantDocIds": ["data-export"], "tags": ["privacy", "paraphrase"]}
