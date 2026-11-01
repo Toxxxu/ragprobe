@@ -116,7 +116,7 @@ ragprobe compare reports/main/report.json reports/branch/report.json     # any t
 - name: Start your RAG service
   run: docker compose up -d my-rag-service
 
-- uses: Toxxxu/ragprobe@main
+- uses: Toxxxu/ragprobe@v0.2.0
   with:
     dataset: eval/dataset.jsonl
     endpoint: http://localhost:8000/query
