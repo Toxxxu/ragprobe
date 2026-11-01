@@ -29,12 +29,21 @@ export class HttpPipeline implements RagPipeline {
   }
 
   async query(question: string, { signal }: { signal: AbortSignal }): Promise<PipelineOutput> {
-    const res = await this.#fetch(this.#opts.url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', accept: 'application/json', ...this.#opts.headers },
-      body: JSON.stringify({ question }),
-      signal,
-    });
+    let res: Response;
+    try {
+      res = await this.#fetch(this.#opts.url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json', ...this.#opts.headers },
+        body: JSON.stringify({ question }),
+        signal,
+      });
+    } catch (err) {
+      if (signal.aborted) throw err;
+      // Node's fetch reports every network failure as "fetch failed"; the cause says why.
+      const cause = (err as { cause?: { code?: string; message?: string } }).cause;
+      const reason = cause?.code ?? cause?.message ?? (err as Error).message;
+      throw new PipelineError(`cannot reach pipeline at ${this.#opts.url} (${reason})`);
+    }
 
     if (!res.ok) {
       const detail = (await res.text().catch(() => '')).slice(0, 200);

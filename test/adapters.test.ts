@@ -41,6 +41,16 @@ describe('HttpPipeline', () => {
     await assert.rejects(bad({ answer: 'a', contexts: [{ id: 1 }] }), PipelineError);
   });
 
+  it('names the URL and cause when the service is unreachable', async () => {
+    const fetch = (async () => {
+      throw new TypeError('fetch failed', { cause: Object.assign(new Error('connect'), { code: 'ECONNREFUSED' }) });
+    }) as typeof globalThis.fetch;
+    await assert.rejects(
+      new HttpPipeline({ url: 'http://localhost:4010/query', fetch }).query('q', { signal }),
+      /cannot reach pipeline at http:\/\/localhost:4010\/query \(ECONNREFUSED\)/,
+    );
+  });
+
   it('supports a custom response mapper', async () => {
     const fetch = fakeFetch(() => json({ text: 'x', docs: [{ doc_id: 'd', text: 't' }] }));
     const pipeline = new HttpPipeline({
