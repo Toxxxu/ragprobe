@@ -34,7 +34,7 @@ The bundled demo pipeline uses keyword retrieval, and the report shows exactly w
 ## Quick start
 
 ```bash
-npm install
+pnpm install
 npm run example:server        # terminal 1: a tiny deterministic RAG service
 npm run example:eval          # terminal 2: evaluate it
 ```
