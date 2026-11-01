@@ -1,9 +1,18 @@
 {
   "name": "ragprobe",
-  "version": "0.3.0",
-  "description": "Evaluate any RAG pipeline: retrieval metrics, LLM-as-judge scoring, and CI quality gates. Zero runtime dependencies, runs fully offline with Ollama.",
+  "version": "0.3.1",
+  "description": "Automated tests for AI assistants that answer from your documents: retrieval metrics, a local LLM judge, test set generation, and CI quality gates.",
   "type": "module",
   "license": "MIT",
+  "author": "Toxxxu (https://github.com/Toxxxu)",
+  "homepage": "https://github.com/Toxxxu/ragprobe#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Toxxxu/ragprobe.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Toxxxu/ragprobe/issues"
+  },
   "bin": {
     "ragprobe": "./dist/cli.js"
   },
@@ -16,16 +25,19 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "packageManager": "pnpm@11.20.0",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
+    "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm test && pnpm run build",
     "dev": "tsx src/cli.ts",
     "example:server": "tsx examples/mock-rag-server.ts",
     "ollama:up": "docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d",
@@ -38,9 +50,15 @@
     "rag",
     "llm",
     "evaluation",
+    "llm-evaluation",
     "retrieval",
+    "llm-as-judge",
+    "testing",
+    "ci",
+    "github-actions",
     "ollama",
-    "llm-as-judge"
+    "langchain",
+    "llamaindex"
   ],
   "devDependencies": {
     "@types/node": "^22.10.0",

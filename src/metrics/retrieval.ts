@@ -3,8 +3,11 @@ import type { RetrievalScores } from '../core/types.js';
 /**
  * Retrieval metrics with binary relevance. All functions take the
  * retrieved IDs in rank order and only consider the top `k`.
- * Duplicate IDs count once, at their first position.
+ * Duplicate IDs count once, at their first position. Relevant IDs can be
+ * given as a `Set` or an array.
  */
+
+export type RelevantIds = ReadonlySet<string> | readonly string[];
 
 export function topK(retrievedIds: readonly string[], k: number): string[] {
   assertK(k);
@@ -21,29 +24,34 @@ export function topK(retrievedIds: readonly string[], k: number): string[] {
 }
 
 /** Fraction of relevant documents found in the top k. */
-export function recallAtK(retrievedIds: readonly string[], relevant: ReadonlySet<string>, k: number): number {
+export function recallAtK(retrievedIds: readonly string[], relevantIds: RelevantIds, k: number): number {
+  const relevant = toSet(relevantIds);
   assertRelevant(relevant);
   return countHits(topK(retrievedIds, k), relevant) / relevant.size;
 }
 
 /** Fraction of the top k slots filled with relevant documents. */
-export function precisionAtK(retrievedIds: readonly string[], relevant: ReadonlySet<string>, k: number): number {
+export function precisionAtK(retrievedIds: readonly string[], relevantIds: RelevantIds, k: number): number {
+  const relevant = toSet(relevantIds);
   return countHits(topK(retrievedIds, k), relevant) / k;
 }
 
 /** 1 if any relevant document appears in the top k, else 0. */
-export function hitRateAtK(retrievedIds: readonly string[], relevant: ReadonlySet<string>, k: number): number {
+export function hitRateAtK(retrievedIds: readonly string[], relevantIds: RelevantIds, k: number): number {
+  const relevant = toSet(relevantIds);
   return topK(retrievedIds, k).some((id) => relevant.has(id)) ? 1 : 0;
 }
 
 /** Reciprocal rank of the first relevant document within the top k (MRR@k). */
-export function reciprocalRank(retrievedIds: readonly string[], relevant: ReadonlySet<string>, k: number): number {
+export function reciprocalRank(retrievedIds: readonly string[], relevantIds: RelevantIds, k: number): number {
+  const relevant = toSet(relevantIds);
   const index = topK(retrievedIds, k).findIndex((id) => relevant.has(id));
   return index === -1 ? 0 : 1 / (index + 1);
 }
 
 /** Normalised discounted cumulative gain at k. */
-export function ndcgAtK(retrievedIds: readonly string[], relevant: ReadonlySet<string>, k: number): number {
+export function ndcgAtK(retrievedIds: readonly string[], relevantIds: RelevantIds, k: number): number {
+  const relevant = toSet(relevantIds);
   assertRelevant(relevant);
   const dcg = topK(retrievedIds, k).reduce((sum, id, i) => (relevant.has(id) ? sum + 1 / Math.log2(i + 2) : sum), 0);
   let idcg = 0;
@@ -64,6 +72,10 @@ export function scoreRetrieval(
     mrr: reciprocalRank(retrievedIds, relevant, k),
     ndcgAtK: ndcgAtK(retrievedIds, relevant, k),
   };
+}
+
+function toSet(ids: RelevantIds): ReadonlySet<string> {
+  return ids instanceof Set ? ids : new Set(ids);
 }
 
 function countHits(ids: readonly string[], relevant: ReadonlySet<string>): number {

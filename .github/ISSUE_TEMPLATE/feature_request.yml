@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an improvement or a new integration.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe what you are trying to do and what gets in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you would like it to work. Example commands or output help.
+  - type: input
+    id: stack
+    attributes:
+      label: Your RAG stack
+      description: Framework, vector store, and models, if relevant.
+      placeholder: LlamaIndex, pgvector, gpt-4o-mini

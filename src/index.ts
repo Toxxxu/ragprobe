@@ -17,6 +17,7 @@ export {
   hitRateAtK,
   reciprocalRank,
   ndcgAtK,
+  type RelevantIds,
 } from './metrics/retrieval.js';
 export type { RagPipeline } from './pipeline/types.js';
 export { HttpPipeline, type HttpPipelineOptions } from './pipeline/http.js';

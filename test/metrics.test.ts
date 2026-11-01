@@ -54,6 +54,13 @@ describe('retrieval metrics', () => {
   it('rejects invalid input', () => {
     assert.throws(() => topK(['a'], 0), RangeError);
     assert.throws(() => recallAtK(['a'], rel(), 3), RangeError);
+    assert.throws(() => recallAtK(['a'], [], 3), RangeError);
+  });
+
+  it('accepts relevant ids as an array or a Set', () => {
+    const retrieved = ['x', 'a', 'b'];
+    assert.equal(recallAtK(retrieved, ['a', 'b', 'c'], 3), recallAtK(retrieved, new Set(['a', 'b', 'c']), 3));
+    assert.equal(ndcgAtK(retrieved, ['a'], 3), ndcgAtK(retrieved, new Set(['a']), 3));
   });
 });
 

@@ -1,0 +1,32 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you ran, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: The full ragprobe command and its output. Remove any secrets.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: ragprobe-version
+    attributes:
+      label: ragprobe version
+      description: Output of `ragprobe --version`.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Node.js version, and the judge model if you used one.
+      placeholder: Windows 11, Node.js 22, qwen3:8b

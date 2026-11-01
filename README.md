@@ -45,17 +45,29 @@ The demo service uses simple keyword search, and the report shows exactly where 
 
 ## Quick start
 
-Requires Node.js 20+ and [pnpm](https://pnpm.io).
+Requires Node.js 20+. Run it without installing, or add it to your project:
 
 ```bash
+pnpm dlx ragprobe run --dataset eval.jsonl --endpoint http://localhost:8000/query
+pnpm add -D ragprobe
+```
+
+### Try the demo
+
+The repository includes a small demo RAG service and a test set:
+
+```bash
+git clone https://github.com/Toxxxu/ragprobe.git && cd ragprobe
 pnpm install
 pnpm run example:server        # terminal 1: a small demo RAG service on port 4010
 pnpm run example:eval          # terminal 2: evaluate it
 ```
 
+From a clone, run any command as `pnpm run dev <command>` instead of `ragprobe <command>`.
+
 ### Add the answer judge (local, free)
 
-Start Ollama in Docker. The first start downloads the judge model (about 5 GB) into a cached volume:
+The judge needs [Ollama](https://ollama.com) on `http://localhost:11434`. With a native install, run `ollama pull qwen3:8b`. From a clone, you can start it in Docker instead; the first start downloads the model (about 5 GB) into a cached volume:
 
 ```bash
 pnpm run ollama:up          # NVIDIA GPU
@@ -66,18 +78,17 @@ pnpm run ollama:logs        # watch the download
 Then evaluate with the judge:
 
 ```bash
-pnpm run dev run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
-  --judge ollama --min-faithfulness 0.7
+ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query   --judge ollama --min-faithfulness 0.7
 ```
 
-The first run loads the model into memory, which can take a few minutes. It stays loaded for 30 minutes. An 8B model fits on an 8 GB GPU; on smaller machines use `--judge-model llama3.2:3b` and pull it with `JUDGE_MODELS="llama3.2:3b" pnpm run ollama:up`. A native Ollama install works too.
+The first run loads the model into memory, which can take a few minutes. It stays loaded for 30 minutes. An 8B model fits on an 8 GB GPU; on smaller machines use `--judge-model llama3.2:3b` and pull that model instead.
 
 ## Generate a test set from your documents
 
 Writing test questions by hand is the slowest part of evaluation. ragprobe drafts them from a folder of `.md`, `.mdx`, or `.txt` files:
 
 ```bash
-pnpm run dev generate --docs path/to/docs --out eval.jsonl --per-doc 3
+ragprobe generate --docs path/to/docs --out eval.jsonl --per-doc 3
 ```
 
 Questions are phrased the way users talk, not copied from the documents, and every second one describes only the user's situation. On the demo documents, keyword search finds 56–63% of them while an embedding retriever finds all of them, so the set separates weak retrieval from good retrieval like a handwritten one.
@@ -119,7 +130,7 @@ Here the keyword-search demo is the baseline and the [LangChain example](example
 - name: Start your RAG service
   run: docker compose up -d my-rag-service
 
-- uses: Toxxxu/ragprobe@v0.3.0
+- uses: Toxxxu/ragprobe@v0.3.1
   with:
     dataset: eval/dataset.jsonl
     endpoint: http://localhost:8000/query
@@ -197,7 +208,7 @@ flowchart LR
 - **The judge scores on a 1–5 scale, normalised to 0–1.** Small models are more consistent with a short integer scale. Requests use structured output (a JSON schema) and temperature 0, and a tolerant parser with retries handles the rest.
 - **Duplicate document IDs count once.** Pipelines often return several chunks of one document, and counting each would inflate precision and nDCG.
 - **One failing case never aborts a run.** Errors are recorded per case and counted in the summary (`--max-error-rate`). Every call has its own timeout, and Ctrl-C cancels requests in flight.
-- **No runtime dependencies.** Argument parsing is `node:util`, tests are `node:test`, and `fetch`, the clock, the pipeline and the judge are all injectable, so the test suite runs offline in about a second.
+- **No runtime dependencies.** Argument parsing is `node:util`, tests are `node:test`, and `fetch`, the clock, the pipeline and the judge are all injectable, so the test suite runs offline in a few seconds.
 
 ## CLI
 
