@@ -1,10 +1,3 @@
-"""Expose a LangChain RAG pipeline to ragprobe.
-
-    pip install fastapi uvicorn langchain-core langchain-ollama
-    ollama pull nomic-embed-text && ollama pull llama3.2:3b
-    uvicorn langchain_server:app --port 4010
-"""
-
 from pathlib import Path
 
 from fastapi import FastAPI

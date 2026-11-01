@@ -14,7 +14,24 @@ If your app is built with a framework, wrap it in a small server that returns th
 | [langchain_server.py](langchain_server.py) | LangChain retriever + chat model |
 | [llamaindex_server.py](llamaindex_server.py) | LlamaIndex query engine |
 
-Start one of them on port 4010, then run the usual evaluation from the repository root:
+## Run an example
+
+Pull the embedding and chat models, install the dependencies for the server you want, and start it on port 4010 from this folder:
+
+```bash
+ollama pull nomic-embed-text
+ollama pull llama3.2:3b
+
+# LangChain
+pip install fastapi uvicorn langchain-core langchain-ollama
+uvicorn langchain_server:app --port 4010
+
+# LlamaIndex
+pip install fastapi uvicorn llama-index-core llama-index-llms-ollama llama-index-embeddings-ollama
+uvicorn llamaindex_server:app --port 4010
+```
+
+Then run the usual evaluation from the repository root:
 
 ```bash
 pnpm run example:eval

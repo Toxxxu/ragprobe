@@ -8,6 +8,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         node: [20, 22]
@@ -27,6 +28,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: check
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +43,7 @@ jobs:
       - name: Start mock RAG server
         run: pnpm run example:server &
       - name: Wait for server
-        run: pnpm dlx wait-on http://localhost:4010/health
+        run: curl --silent --fail --retry 30 --retry-delay 1 --retry-all-errors http://localhost:4010/health
       - name: Evaluate with the ragprobe action
         uses: ./
         with:

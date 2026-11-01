@@ -1,10 +1,3 @@
-"""Expose a LlamaIndex query engine to ragprobe.
-
-    pip install fastapi uvicorn llama-index-core llama-index-llms-ollama llama-index-embeddings-ollama
-    ollama pull nomic-embed-text && ollama pull llama3.2:3b
-    uvicorn llamaindex_server:app --port 4010
-"""
-
 from pathlib import Path
 
 from fastapi import FastAPI
