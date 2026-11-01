@@ -15,7 +15,8 @@ faithfulness: is everything the ANSWER states supported by the CONTEXT?
 
 relevance: does the ANSWER fully address the QUESTION?
   5 = answers the question completely and directly; 3 = partially answers it or misses key parts;
-  1 = off-topic, or does not answer it. "I don't know" and similar non-answers are always 1.
+  1 = off-topic, or does not answer it. A true statement about a different fact than the one asked is 1.
+  A reply that only says "I don't know" is 1; if it hedges but still gives the answer, score the answer it gives.
   Missing or incomplete information lowers relevance, not faithfulness.
 
 Examples:

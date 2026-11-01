@@ -29,12 +29,26 @@ export interface GenerateResult {
 const DOC_EXTENSIONS = new Set(['.md', '.mdx', '.txt']);
 const MAX_DOC_CHARS = 12_000;
 
-const SYSTEM_PROMPT = `You write evaluation questions for a document question-answering assistant.
-Given a DOCUMENT, write the requested number of questions that a real user might ask and that this document answers.
-- Phrase each question the way a user would, in their own words. Do not copy sentences from the document.
-- Each question must be answerable from this document alone.
+const SYSTEM_PROMPT = `You write test questions for a document question-answering assistant.
+Given a DOCUMENT, write the requested number of questions that real users would ask and that this document answers.
+
+Real users have not read the document. They describe their situation or goal in everyday words and do not know
+its terminology, feature names, or menu labels. Write questions that way:
+- Start from what the user wants to achieve or is worried about, not from the document's sentences.
+- Avoid the document's distinctive words and phrases. Use everyday synonyms or describe the situation instead.
+- Make every second question indirect: describe only the user's situation or problem, without naming the topic,
+  feature, or any key term from the document.
+- Each question must still be answerable from this document alone, and the document must actually answer what is
+  asked. Do not ask about causes, problems, or topics the document does not cover.
 - Cover different facts in the document instead of repeating one.
 - Give a short answer for each question, using only information from the document.
+
+Example:
+DOCUMENT: "Library members can renew borrowed items online up to three times, unless another member has reserved them."
+Bad: "How many times can I renew borrowed items online?" (copies the document's wording)
+Good: "I haven't finished my book yet, can I keep it a bit longer?"
+Good: "Why won't the website let me extend my loan?"
+
 Respond with JSON only: {"questions": [{"question": "...", "answer": "..."}]}`;
 
 /** Reads `.md`, `.mdx` and `.txt` files under `dir`, recursively, in a stable order. */

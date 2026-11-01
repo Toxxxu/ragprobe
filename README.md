@@ -11,7 +11,7 @@ Your chatbot answers questions from your help centre, wiki, or contracts. ragpro
 - **Catches regressions.** Compare any two runs and block a pull request when quality drops.
 - **Writes the test set for you.** Point it at a folder of documents and it drafts realistic questions.
 - **Free and offline.** The judge model runs locally through [Ollama](https://ollama.com). No API keys, and your documents never leave your machine.
-- **Works with any stack.** Anything that answers an HTTP request: LangChain, LlamaIndex, or your own code.
+- **Works with any stack.** Anything that answers an HTTP request: LangChain, LlamaIndex, the OpenAI API, or your own code.
 
 ```text
 $ ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query --judge ollama --min-recall 0.6
@@ -25,14 +25,14 @@ $ ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010
 | recall@5 | 72.2% |
 | MRR@5 | 0.778 |
 | faithfulness | 94.4% (9 judged, 0 errors) |
-| relevance | 50.0% |
+| relevance | 55.6% |
 
 ### Weakest cases
 
 | Case | Recall | MRR | Faithfulness | Relevance | Note |
 | --- | --- | --- | --- | --- | --- |
-| `secure-account` | 0.0% | 0.00 | 100.0% | 0.0% | The answer claims no information is available, which is faithful to the context (no context retrieved). However, it does not address the question... |
-| `refund-speed` | 100.0% | 1.00 | 100.0% | 0.0% | The answer is fully faithful to the context as it correctly states the 30-day refund window. However, it is irrelevant to the question about when the refund wil... |
+| `secure-account` | 0.0% | 0.00 | 100.0% | 0.0% | The answer is faithful as it does not make any claims beyond what is known. However, it is irrelevant because it does not address the question about making a lo... |
+| `refund-speed` | 100.0% | 1.00 | 100.0% | 0.0% | The answer is fully faithful to the context, as it correctly states the 30-day refund window. However, it is irrelevant to the question about when the refund wi... |
 ```
 
 The demo service uses simple keyword search, and the report shows exactly where that breaks: "How can I make my login more secure?" never finds the two-factor authentication page, and "When will my refund arrive?" gets a true answer to a different question.
@@ -80,6 +80,8 @@ Writing test questions by hand is the slowest part of evaluation. ragprobe draft
 pnpm run dev generate --docs path/to/docs --out eval.jsonl --per-doc 3
 ```
 
+Questions are phrased the way users talk, not copied from the documents, and every second one describes only the user's situation. On the demo documents, keyword search finds 56–63% of them while an embedding retriever finds all of them, so the set separates weak retrieval from good retrieval like a handwritten one.
+
 Each document's ID is its path without the extension (`docs/billing/refunds.md` → `billing/refunds`), so your service must return the same IDs in `contexts`. Generated questions are a starting point: read them, delete weak ones, and add the questions your real users ask.
 
 ## Catch regressions
@@ -92,20 +94,21 @@ ragprobe run ... --baseline reports/main/report.json --max-drop 0.05     # on a 
 ragprobe compare reports/main/report.json reports/branch/report.json     # any two runs
 ```
 
+Here the keyword-search demo is the baseline and the [LangChain example](examples/integrations), which uses embeddings, is the new run:
+
 ```text
 | Metric | Baseline | Now | Change |
 | --- | --- | --- | --- |
-| recall@5 | 0.722 | 0.722 | – |
-| faithfulness | 0.889 | 0.944 | +0.056 ▲ better |
-| relevance | 0.722 | 0.500 | −0.222 ▼ worse |
+| recall@5 | 0.722 | 1.000 | +0.278 ▲ better |
+| MRR@5 | 0.778 | 1.000 | +0.222 ▲ better |
+| faithfulness | 0.944 | 1.000 | +0.056 ▲ better |
+| relevance | 0.500 | 1.000 | +0.500 ▲ better |
 
-### Cases that got worse (3)
-- `reset-password`: relevance 100% → 50%
-- `secure-account`: relevance 50% → 0%
-- `download-data`: relevance 100% → 0%
-
-### Cases that got better (1)
-- `refund-speed`: faithfulness 50% → 100%
+### Cases that got better (6)
+- `refund-speed`: relevance 0% → 100%
+- `secure-account`: recall@5 0% → 100%, relevance 0% → 100%
+- `download-data`: recall@5 0% → 100%, relevance 0% → 100%
+- …
 ```
 
 `--max-drop 0.05` exits with code 1 when any metric worsens by more than 0.05.
@@ -134,7 +137,7 @@ POST /query  {"question": "..."}
 → {"answer": "...", "contexts": [{"id": "refund-policy", "content": "...", "score": 0.82}]}
 ```
 
-Ready-made servers for **LangChain** and **LlamaIndex** are in [examples/integrations](examples/integrations). A different response shape can be converted with `mapResponse`, and Node.js code can skip HTTP entirely:
+Ready-made servers for **LangChain**, **LlamaIndex** and the **OpenAI API** are in [examples/integrations](examples/integrations). A different response shape can be converted with `mapResponse`, and Node.js code can skip HTTP entirely:
 
 ```ts
 import { runEvaluation, loadDataset, checkGate, type RagPipeline } from 'ragprobe';
