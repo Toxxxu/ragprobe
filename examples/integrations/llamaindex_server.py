@@ -9,7 +9,7 @@ from pydantic import BaseModel
 DOCS_DIR = Path(__file__).resolve().parent.parent / "docs"
 
 Settings.embed_model = OllamaEmbedding(model_name="nomic-embed-text")
-Settings.llm = Ollama(model="llama3.2:3b", request_timeout=120.0)
+Settings.llm = Ollama(model="llama3.2:3b", request_timeout=120.0, context_window=8192)
 
 documents = SimpleDirectoryReader(str(DOCS_DIR), required_exts=[".md"]).load_data()
 engine = VectorStoreIndex.from_documents(documents).as_query_engine(similarity_top_k=5)

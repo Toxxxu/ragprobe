@@ -57,6 +57,18 @@ describe('compareReports', () => {
     assert.equal(compareReports(base, head, { maxDrop: 0.5 }).passed, true);
   });
 
+  it('lists each changed case once with all of its changes', async () => {
+    const judged = (relevance: number) =>
+      runEvaluation(cases, {
+        pipeline: pipeline(relevance === 1 ? ['a?'] : []),
+        judge: { name: 'fixed', evaluate: async () => ({ faithfulness: 1, relevance, reasoning: '' }) },
+        k: 3,
+      });
+    const cmp = compareReports(await judged(0), await judged(1));
+    assert.deepEqual(cmp.improvements[0], { id: 'a', change: 'recall@3 0% → 100%, relevance 0% → 100%' });
+    assert.equal(cmp.improvements.length, 3);
+  });
+
   it('refuses to compare runs with different k', async () => {
     const base = await run(pipeline(['a?']));
     const head = await runEvaluation(cases, { pipeline: pipeline(['a?']), k: 5 });

@@ -80,7 +80,11 @@ export function compareReports(base: RunReport, head: RunReport, opts: CompareOp
   for (const now of head.results) {
     const before = baseById.get(now.testCase.id);
     if (!before) continue;
-    for (const c of caseChanges(before, now, k)) (c.worse ? regressions : improvements).push({ id: now.testCase.id, change: c.text });
+    const changes = caseChanges(before, now, k);
+    const worse = changes.filter((c) => c.worse).map((c) => c.text);
+    const better = changes.filter((c) => !c.worse).map((c) => c.text);
+    if (worse.length > 0) regressions.push({ id: now.testCase.id, change: worse.join(', ') });
+    if (better.length > 0) improvements.push({ id: now.testCase.id, change: better.join(', ') });
   }
 
   return { metrics, regressions, improvements, passed: failures.length === 0, failures };

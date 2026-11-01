@@ -37,6 +37,13 @@ Then run the usual evaluation from the repository root:
 pnpm run example:eval
 ```
 
+On a GPU with 8 GB or less, the chat model and the judge model cannot both stay in memory, so Ollama swaps them and some answers take over 30 seconds. Raise the per-call timeout and lower the concurrency when you add the judge:
+
+```bash
+pnpm run dev run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
+  --judge ollama --timeout 180000 --concurrency 2
+```
+
 ## Document IDs must match
 
 ragprobe measures retrieval by comparing the `id` of each returned context with `relevantDocIds` in the test set. Both examples use the file name without its extension (`refund-policy.md` → `refund-policy`), which is also what `ragprobe generate` writes. If your app splits documents into chunks, return the ID of the source document for each chunk; ragprobe counts repeated IDs once.
