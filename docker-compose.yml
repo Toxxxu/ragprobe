@@ -1,0 +1,36 @@
+# Local Ollama for the ragprobe judge. CPU by default; add the GPU override:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Models are pulled once by the `models` service and cached in a named volume.
+# Choose which ones with JUDGE_MODELS="qwen3:8b llama3.2:3b" docker compose up -d
+
+services:
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      # Keep the model loaded between eval runs instead of reloading it each time.
+      OLLAMA_KEEP_ALIVE: 30m
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  models:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      JUDGE_MODELS: ${JUDGE_MODELS:-qwen3:8b}
+    entrypoint: ["/bin/sh", "-c", "for m in $$JUDGE_MODELS; do echo \"pulling $$m\"; ollama pull \"$$m\" || exit 1; done"]
+    restart: "no"
+
+volumes:
+  ollama:
