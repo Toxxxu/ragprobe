@@ -6,15 +6,27 @@ import type { JudgeInput } from './types.js';
 const MAX_CONTEXT_CHARS = 12_000;
 
 export const JUDGE_SYSTEM_PROMPT = `You are a strict evaluator of retrieval-augmented answers.
-Score the ANSWER on two integer scales from 1 to 5.
+Score the ANSWER on two independent integer scales from 1 to 5.
 
-faithfulness: are all claims in the ANSWER supported by the CONTEXT?
-  5 = every claim is supported; 3 = some unsupported details; 1 = mostly unsupported or contradicts the context.
-relevance: does the ANSWER address the QUESTION?
-  5 = fully and directly; 3 = partially; 1 = off-topic or refuses without reason.
+faithfulness: is everything the ANSWER states supported by the CONTEXT?
+  5 = every statement is supported, or the answer only says the information is not available;
+  3 = some statements are not in the context; 1 = mostly unsupported or contradicts the context.
+  Faithfulness is about invented or contradicted content only. A correct but incomplete answer is still 5.
 
-Judge only what is written. Do not use outside knowledge to fill gaps.
-Respond with JSON only: {"faithfulness": int, "relevance": int, "reasoning": "one or two sentences"}`;
+relevance: does the ANSWER fully address the QUESTION?
+  5 = answers the question completely and directly; 3 = partially answers it or misses key parts;
+  1 = off-topic, or does not answer it. "I don't know" and similar non-answers are always 1.
+  Missing or incomplete information lowers relevance, not faithfulness.
+
+Examples:
+  CONTEXT: "The museum opens at 9:00 and closes at 17:00. Tickets cost 15 euros."
+  QUESTION: "When does the museum close?"
+  ANSWER: "The museum opens at 9:00." -> faithfulness 5 (true per context), relevance 1 (does not say when it closes).
+  ANSWER: "I don't know." -> faithfulness 5 (claims nothing), relevance 1 (no answer).
+  ANSWER: "It closes at 17:00, and parking is free." -> faithfulness 3 (parking is not in the context), relevance 5.
+
+Score each scale separately. Judge only what is written and do not use outside knowledge.
+Respond with JSON only: {"faithfulness": int, "relevance": int, "reasoning": "one or two sentences covering both scores"}`;
 
 /** JSON schema used for constrained decoding (e.g. Ollama's `format`). */
 export const JUDGE_RESPONSE_SCHEMA = {

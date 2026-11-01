@@ -2,6 +2,7 @@ import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { RunReport } from '../core/types.js';
 import type { GateResult } from '../runner/gate.js';
+import { renderComparison, type Comparison } from './compare.js';
 import { renderMarkdown } from './markdown.js';
 
 export interface WrittenReports {
@@ -9,14 +10,19 @@ export interface WrittenReports {
   readonly markdown: string;
 }
 
-export async function writeReports(dir: string, report: RunReport, gate?: GateResult): Promise<WrittenReports> {
+export interface ReportExtras {
+  readonly gate?: GateResult;
+  readonly comparison?: Comparison;
+}
+
+export async function writeReports(dir: string, report: RunReport, extras: ReportExtras = {}): Promise<WrittenReports> {
   await mkdir(dir, { recursive: true });
   const json = join(dir, 'report.json');
   const markdown = join(dir, 'report.md');
-  const md = renderMarkdown(report, gate);
+  const md = [renderMarkdown(report, extras.gate), ...(extras.comparison ? [renderComparison(extras.comparison)] : [])].join('\n');
 
   await Promise.all([
-    writeFile(json, JSON.stringify({ ...report, gate: gate ?? null }, null, 2) + '\n'),
+    writeFile(json, JSON.stringify({ ...report, gate: extras.gate ?? null, comparison: extras.comparison ?? null }, null, 2) + '\n'),
     writeFile(markdown, md),
   ]);
 

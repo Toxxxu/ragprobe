@@ -7,7 +7,7 @@ export interface HttpPipelineOptions {
   readonly headers?: Readonly<Record<string, string>>;
   /** Adapt a non-standard response body to `PipelineOutput`. */
   readonly mapResponse?: (body: unknown) => PipelineOutput;
-  /** Injected for tests; defaults to the global `fetch`. */
+  /** Custom `fetch` implementation. Defaults to the global `fetch`. */
   readonly fetch?: typeof fetch;
 }
 

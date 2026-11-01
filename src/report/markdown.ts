@@ -41,7 +41,12 @@ export function renderMarkdown(report: RunReport, gate?: GateResult, worstN = 5)
 
   const worst = worstCases(report.results, worstN);
   if (worst.length > 0) {
-    lines.push('### Weakest cases', '', '| Case | Recall | MRR | Faithfulness | Note |', '| --- | --- | --- | --- | --- |');
+    lines.push(
+      '### Weakest cases',
+      '',
+      '| Case | Recall | MRR | Faithfulness | Relevance | Note |',
+      '| --- | --- | --- | --- | --- | --- |',
+    );
     for (const r of worst) lines.push(caseRow(r));
     lines.push('');
   }
@@ -49,26 +54,27 @@ export function renderMarkdown(report: RunReport, gate?: GateResult, worstN = 5)
   return lines.join('\n');
 }
 
-/** Errors first, then lowest recall, then lowest faithfulness. */
+/** Errors first, then the lowest combined recall, MRR, faithfulness and relevance. */
 export function worstCases(results: readonly CaseResult[], n: number): CaseResult[] {
   const score = (r: CaseResult) => {
     if (r.status === 'error') return -1;
-    const faith = r.judge?.status === 'ok' ? r.judge.verdict.faithfulness : 1;
-    return r.retrieval.recallAtK + r.retrieval.mrr + faith;
+    const verdict = r.judge?.status === 'ok' ? r.judge.verdict : undefined;
+    return r.retrieval.recallAtK + r.retrieval.mrr + (verdict?.faithfulness ?? 1) + (verdict?.relevance ?? 1);
   };
   return [...results]
-    .filter((r) => score(r) < 3)
+    .filter((r) => score(r) < 4)
     .sort((a, b) => score(a) - score(b))
     .slice(0, n);
 }
 
 function caseRow(r: CaseResult): string {
   const id = `\`${escapeCell(r.testCase.id)}\``;
-  if (r.status === 'error') return `| ${id} | – | – | – | error: ${escapeCell(r.error)} |`;
+  if (r.status === 'error') return `| ${id} | – | – | – | – | error: ${escapeCell(r.error)} |`;
   const judge = r.judge;
   const faith = judge?.status === 'ok' ? pct(judge.verdict.faithfulness) : '–';
+  const relevance = judge?.status === 'ok' ? pct(judge.verdict.relevance) : '–';
   const note = judge?.status === 'ok' ? judge.verdict.reasoning : judge?.status === 'error' ? `judge error: ${judge.error}` : '';
-  return `| ${id} | ${pct(r.retrieval.recallAtK)} | ${r.retrieval.mrr.toFixed(2)} | ${faith} | ${escapeCell(note)} |`;
+  return `| ${id} | ${pct(r.retrieval.recallAtK)} | ${r.retrieval.mrr.toFixed(2)} | ${faith} | ${relevance} | ${escapeCell(note)} |`;
 }
 
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;

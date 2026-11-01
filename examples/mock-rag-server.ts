@@ -1,22 +1,21 @@
 /**
  * A deliberately simple RAG service for demos and CI: TF-IDF style keyword
- * retrieval over a tiny corpus and an extractive "answer" (first sentence
+ * retrieval over `examples/docs` and an extractive "answer" (first sentence
  * of the best document). No LLM, no network, fully deterministic.
+ * Each document's ID is its file name without the extension.
  *
  *   pnpm run example:server   ->  POST http://localhost:4010/query
  */
+import { readdirSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { basename, extname, join } from 'node:path';
 
-const CORPUS: Record<string, string> = {
-  'refund-policy': 'Customers can request a full refund within 30 days of purchase. Refunds are issued to the original payment method within 5 business days.',
-  'shipping-times': 'Standard shipping takes 3 to 5 business days within the EU. Express shipping delivers in 1 to 2 business days for an extra fee.',
-  'shipping-international': 'International orders outside the EU ship in 7 to 14 business days. Customs duties are paid by the recipient.',
-  'password-reset': 'To reset your password, open Settings, choose Security, and click Reset password. A reset link is emailed and expires after one hour.',
-  'two-factor': 'Two-factor authentication can be enabled under Settings, Security. Authenticator apps and hardware keys are supported.',
-  'plan-pricing': 'The Pro plan costs 12 euros per month or 120 euros per year. The Team plan costs 20 euros per user per month.',
-  'plan-cancel': 'You can cancel a subscription at any time from Billing. Access continues until the end of the current billing period.',
-  'data-export': 'Account data can be exported as JSON from Settings, Privacy. Exports are prepared in the background and emailed when ready.',
-};
+const DOCS_DIR = join(import.meta.dirname, 'docs');
+const CORPUS: Record<string, string> = Object.fromEntries(
+  readdirSync(DOCS_DIR)
+    .filter((f) => extname(f) === '.md')
+    .map((f) => [basename(f, '.md'), readFileSync(join(DOCS_DIR, f), 'utf8').trim()]),
+);
 
 const STOPWORDS = new Set('a an and are as at be by can do does for from how i in is it my of on or the to what when where which who why with you your'.split(' '));
 

@@ -107,4 +107,10 @@ describe('renderMarkdown', () => {
     assert.ok(md.indexOf('`boom`') < md.indexOf('`miss`'), 'errors sort before low recall');
     assert.doesNotMatch(md, /`good`/);
   });
+
+  it('counts an off-topic answer as weak even when retrieval is perfect', async () => {
+    const offTopic: Judge = { name: 'off-topic', evaluate: async () => ({ faithfulness: 1, relevance: 0, reasoning: 'answers a different question' }) };
+    const report = await runEvaluation([cases[0] as TestCase], { pipeline: fakePipeline(), judge: offTopic, k: 3 });
+    assert.match(renderMarkdown(report), /\| `good` \| 100\.0% \| 1\.00 \| 100\.0% \| 0\.0% \| answers a different question \|/);
+  });
 });

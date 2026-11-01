@@ -1,14 +1,20 @@
 # ragprobe
 
-**Evaluate any RAG pipeline from the command line.** Retrieval metrics, LLM-as-judge scoring, and a CI quality gate that fails the build when answer quality regresses.
+[![CI](https://github.com/Toxxxu/ragprobe/actions/workflows/ci.yml/badge.svg)](https://github.com/Toxxxu/ragprobe/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-- **Pipeline-agnostic.** Point it at any HTTP endpoint, or implement one small interface in-process.
-- **Free and offline.** The optional judge runs on a local model through [Ollama](https://ollama.com). No API keys.
-- **Zero runtime dependencies.** Only Node.js 20+.
-- **Built for CI.** Exit codes, thresholds, and a Markdown report that shows up on the GitHub Actions run page.
+**Automated tests for AI assistants that answer from your documents.**
+
+Your chatbot answers questions from your help centre, wiki, or contracts. ragprobe tells you when it finds the wrong documents or makes things up, before your users do, and fails the build when a change makes it worse.
+
+- **Finds the weak spots.** Scores retrieval (did it find the right documents?) and answers (are they supported and on topic?), and lists the exact questions that fail.
+- **Catches regressions.** Compare any two runs and block a pull request when quality drops.
+- **Writes the test set for you.** Point it at a folder of documents and it drafts realistic questions.
+- **Free and offline.** The judge model runs locally through [Ollama](https://ollama.com). No API keys, and your documents never leave your machine.
+- **Works with any stack.** Anything that answers an HTTP request: LangChain, LlamaIndex, or your own code.
 
 ```text
-$ ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query --k 3 --min-recall 0.6
+$ ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query --judge ollama --min-recall 0.6
 
 ## ragprobe report
 
@@ -16,82 +22,119 @@ $ ragprobe run --dataset examples/dataset.jsonl --endpoint http://localhost:4010
 
 | Metric | Value |
 | --- | --- |
-| recall@3 | 72.2% |
-| MRR@3 | 0.778 |
-| nDCG@3 | 0.735 |
-| latency p50 / p95 | 21ms / 82ms |
+| recall@5 | 72.2% |
+| MRR@5 | 0.778 |
+| faithfulness | 94.4% (9 judged, 0 errors) |
+| relevance | 50.0% |
 
 ### Weakest cases
 
-| Case | Recall | MRR | Faithfulness | Note |
-| --- | --- | --- | --- | --- |
-| `secure-account` | 0.0% | 0.00 | – |  |
-| `download-data` | 0.0% | 0.00 | – |  |
+| Case | Recall | MRR | Faithfulness | Relevance | Note |
+| --- | --- | --- | --- | --- | --- |
+| `secure-account` | 0.0% | 0.00 | 100.0% | 0.0% | The answer claims no information is available, which is faithful to the context (no context retrieved). However, it does not address the question... |
+| `refund-speed` | 100.0% | 1.00 | 100.0% | 0.0% | The answer is fully faithful to the context as it correctly states the 30-day refund window. However, it is irrelevant to the question about when the refund wil... |
 ```
 
-The bundled demo pipeline uses keyword retrieval, and the report shows exactly where that breaks: paraphrased questions ("make my login more secure") miss the right document. That is the point of the tool: it turns "the RAG feels worse" into a number and a list of cases.
+The demo service uses simple keyword search, and the report shows exactly where that breaks: "How can I make my login more secure?" never finds the two-factor authentication page, and "When will my refund arrive?" gets a true answer to a different question.
+
+## Who it is for
+
+- **Teams shipping a RAG chatbot or search assistant** who want to know whether a prompt, model, or chunking change made it better or worse.
+- **Engineers choosing between models or embeddings** who need numbers instead of impressions.
+- **Regulated or privacy-sensitive teams** that need evidence the assistant sticks to the source documents, without sending data to a third party.
 
 ## Quick start
 
+Requires Node.js 20+ and [pnpm](https://pnpm.io).
+
 ```bash
 pnpm install
-pnpm run example:server        # terminal 1: a tiny deterministic RAG service
+pnpm run example:server        # terminal 1: a small demo RAG service on port 4010
 pnpm run example:eval          # terminal 2: evaluate it
 ```
 
-### With an LLM judge (local, free)
+### Add the answer judge (local, free)
 
-Start Ollama in Docker. On first start, the `models` service pulls the judge model into a cached volume:
+Start Ollama in Docker. The first start downloads the judge model (about 5 GB) into a cached volume:
 
 ```bash
 pnpm run ollama:up          # NVIDIA GPU
 pnpm run ollama:up:cpu      # no GPU (slower)
-pnpm run ollama:logs        # watch the model download
+pnpm run ollama:logs        # watch the download
 ```
 
 Then evaluate with the judge:
 
 ```bash
-pnpm run dev -- run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
-  --judge ollama --judge-model qwen3:8b --min-faithfulness 0.7
+pnpm run dev run --dataset examples/dataset.jsonl --endpoint http://localhost:4010/query \
+  --judge ollama --min-faithfulness 0.7
 ```
 
-To pull different models, set `JUDGE_MODELS="qwen3:8b llama3.2:3b" pnpm run ollama:up`. A native Ollama install works too; ragprobe only needs `http://localhost:11434`.
+The first run loads the model into memory, which can take a few minutes. It stays loaded for 30 minutes. An 8B model fits on an 8 GB GPU; on smaller machines use `--judge-model llama3.2:3b` and pull it with `JUDGE_MODELS="llama3.2:3b" pnpm run ollama:up`. A native Ollama install works too.
 
-An 8B model at 4-bit quantisation with an 8k context fits on an 8 GB GPU. On smaller machines, use `llama3.2:3b`. To confirm the GPU is in use, run `docker compose exec ollama ollama ps`: the PROCESSOR column should read `100% GPU`.
+## Generate a test set from your documents
 
-## How it works
+Writing test questions by hand is the slowest part of evaluation. ragprobe drafts them from a folder of `.md`, `.mdx`, or `.txt` files:
 
-```mermaid
-flowchart LR
-  D[Test set<br/>JSONL] --> R[Runner<br/>concurrency, timeouts]
-  R --> P[Your RAG pipeline<br/>HttpPipeline or custom]
-  P --> R
-  R --> M[Retrieval metrics<br/>recall, MRR, nDCG]
-  R --> J[Judge<br/>faithfulness, relevance]
-  M --> S[Summary + quality gate]
-  J --> S
-  S --> O[report.json / report.md<br/>exit code]
+```bash
+pnpm run dev generate --docs path/to/docs --out eval.jsonl --per-doc 3
 ```
 
-### Dataset format
+Each document's ID is its path without the extension (`docs/billing/refunds.md` → `billing/refunds`), so your service must return the same IDs in `contexts`. Generated questions are a starting point: read them, delete weak ones, and add the questions your real users ask.
 
-One JSON object per line. `#` lines are comments.
+## Catch regressions
 
-```json
-{"id": "refund-window", "question": "How many days do I have to request a refund?", "relevantDocIds": ["refund-policy"], "referenceAnswer": "Within 30 days.", "tags": ["billing"]}
+Save a baseline, then compare every change against it:
+
+```bash
+ragprobe run ... --out reports/main                                      # on main
+ragprobe run ... --baseline reports/main/report.json --max-drop 0.05     # on a branch
+ragprobe compare reports/main/report.json reports/branch/report.json     # any two runs
 ```
 
-Every problem in the file is reported at once, with line numbers, before any request is sent.
+```text
+| Metric | Baseline | Now | Change |
+| --- | --- | --- | --- |
+| recall@5 | 0.722 | 0.722 | – |
+| faithfulness | 0.889 | 0.944 | +0.056 ▲ better |
+| relevance | 0.722 | 0.500 | −0.222 ▼ worse |
 
-### Pipeline contract
+### Cases that got worse (3)
+- `reset-password`: relevance 100% → 50%
+- `secure-account`: relevance 50% → 0%
+- `download-data`: relevance 100% → 0%
+
+### Cases that got better (1)
+- `refund-speed`: faithfulness 50% → 100%
+```
+
+`--max-drop 0.05` exits with code 1 when any metric worsens by more than 0.05.
+
+## Use it in GitHub Actions
+
+```yaml
+- name: Start your RAG service
+  run: docker compose up -d my-rag-service
+
+- uses: Toxxxu/ragprobe@main
+  with:
+    dataset: eval/dataset.jsonl
+    endpoint: http://localhost:8000/query
+    args: --k 5 --min-recall 0.8 --min-mrr 0.6
+```
+
+The report appears on the run's summary page, and the step fails when a threshold is missed. Outputs `report-json` and `report-markdown` give the file paths for later steps.
+
+## Connect your pipeline
+
+ragprobe sends one request per question:
 
 ```http
 POST /query  {"question": "..."}
 → {"answer": "...", "contexts": [{"id": "refund-policy", "content": "...", "score": 0.82}]}
 ```
 
-Different response shape? Pass `mapResponse`, or skip HTTP entirely:
+Ready-made servers for **LangChain** and **LlamaIndex** are in [examples/integrations](examples/integrations). A different response shape can be converted with `mapResponse`, and Node.js code can skip HTTP entirely:
 
 ```ts
 import { runEvaluation, loadDataset, checkGate, type RagPipeline } from 'ragprobe';
@@ -108,59 +151,93 @@ const report = await runEvaluation(await loadDataset('eval.jsonl'), { pipeline, 
 console.log(checkGate(report.summary, { minRecall: 0.8 }));
 ```
 
+### Dataset format
+
+One JSON object per line. Lines starting with `#` are comments.
+
+```json
+{"id": "refund-window", "question": "How many days do I have to request a refund?", "relevantDocIds": ["refund-policy"], "referenceAnswer": "Within 30 days.", "tags": ["billing"]}
+```
+
+Every problem in the file is reported at once, with line numbers, before any request is sent.
+
 ## Metrics
 
 | Metric | Question it answers |
 | --- | --- |
-| recall@k | Of the documents that matter, how many did we retrieve? |
-| precision@k | How much of the context window is useful? |
-| hit rate@k | Did we retrieve at least one useful document? |
+| recall@k | Of the documents that matter, how many did it find? |
+| precision@k | How much of what it found is useful? |
+| hit rate@k | Did it find at least one useful document? |
 | MRR@k | How high is the first useful document ranked? |
 | nDCG@k | How good is the whole ranking? |
-| faithfulness | Is every claim in the answer supported by the context? (judge) |
-| relevance | Does the answer address the question? (judge) |
+| faithfulness | Is everything in the answer supported by the documents? (judge) |
+| relevance | Does the answer fully address the question? (judge) |
+
+## How it works
+
+```mermaid
+flowchart LR
+  D[Test set<br/>JSONL] --> R[Runner<br/>concurrency, timeouts]
+  R --> P[Your RAG service<br/>HTTP or in-process]
+  P --> R
+  R --> M[Retrieval metrics<br/>recall, MRR, nDCG]
+  R --> J[Judge<br/>faithfulness, relevance]
+  M --> S[Summary, quality gate,<br/>baseline comparison]
+  J --> S
+  S --> O[report.json / report.md<br/>exit code]
+```
 
 ## Design decisions
 
-- **Retrieval and generation are scored separately.** When quality drops, you need to know whether the retriever or the generator caused it. Retrieval metrics are pure, deterministic functions. Only answer quality needs a model.
-- **Duplicate document IDs count once.** Pipelines often return several chunks of one document. Counting each chunk would inflate precision and nDCG.
-- **The judge scores on a 1–5 scale, normalised to 0–1.** Small models are noticeably more consistent with a short integer scale than with free-form floats. The request uses Ollama's structured output (JSON schema) and temperature 0. A tolerant parser and retries handle what slips through.
-- **One failing case never aborts a run.** Pipeline and judge errors are recorded per case and counted in the summary (`--max-error-rate`). Each call has its own timeout, and Ctrl-C cancels in-flight requests through `AbortSignal`.
-- **Dependencies are injected.** `fetch`, the clock, the pipeline, and the judge can all be swapped, so the test suite runs in about 2 seconds with no network.
-- **No runtime dependencies.** Argument parsing is `node:util`, tests are `node:test`, and validation is a small hand-written parser that reports every issue at once.
+- **Retrieval and answers are scored separately.** When quality drops, you need to know whether search or generation caused it. Retrieval metrics are pure, deterministic functions; only answer quality needs a model.
+- **Faithfulness and relevance are independent.** A true but incomplete answer is faithful and only partially relevant; "I don't know" is faithful and not relevant. The judge prompt spells this out with worked examples, because small models otherwise blur the two.
+- **The judge scores on a 1–5 scale, normalised to 0–1.** Small models are more consistent with a short integer scale. Requests use structured output (a JSON schema) and temperature 0, and a tolerant parser with retries handles the rest.
+- **Duplicate document IDs count once.** Pipelines often return several chunks of one document, and counting each would inflate precision and nDCG.
+- **One failing case never aborts a run.** Errors are recorded per case and counted in the summary (`--max-error-rate`). Every call has its own timeout, and Ctrl-C cancels requests in flight.
+- **No runtime dependencies.** Argument parsing is `node:util`, tests are `node:test`, and `fetch`, the clock, the pipeline and the judge are all injectable, so the test suite runs offline in about a second.
 
 ## CLI
 
 ```text
 ragprobe run --dataset <file> --endpoint <url> [options]
-
-  --k <n>                 rank cutoff (default 5)
-  --concurrency <n>       parallel requests (default 4)
-  --timeout <ms>          per-call timeout (default 30000)
-  --header "k: v"         extra request header, repeatable
-  --judge ollama          enable the LLM judge
-  --judge-model <name>    default qwen3:8b
-  --judge-load-timeout <ms>  time allowed to load the model before the run (default 600000)
+  --k <n>                      rank cutoff (default 5)
+  --concurrency <n>            parallel requests (default 4)
+  --timeout <ms>               per-call timeout (default 30000)
+  --header "k: v"              extra request header, repeatable
+  --judge ollama               enable the answer judge
+  --judge-model <name>         default qwen3:8b
+  --judge-load-timeout <ms>    time allowed to load the model (default 600000)
   --min-recall / --min-mrr / --min-ndcg / --min-faithfulness / --min-relevance / --max-error-rate
-  --out <dir>             default ./reports
+  --baseline <report.json>     compare with an earlier run
+  --max-drop <0..1>            fail when any metric worsens by more than this
+  --out <dir>                  default ./reports
+
+ragprobe compare <baseline.json> <current.json> [--max-drop <0..1>]
+
+ragprobe generate --docs <dir> --out <file.jsonl> [--per-doc <n>] [--model <name>] [--force]
 ```
 
-Exit codes: `0` passed, `1` quality gate failed, `2` usage or runtime error.
+Exit codes: `0` passed, `1` quality gate or regression check failed, `2` usage or runtime error. Run `ragprobe <command> --help` for every option.
 
 ## Development
 
 ```bash
-pnpm test           # node:test via tsx
+pnpm test
 pnpm run typecheck
 pnpm run build
 ```
 
 ## Roadmap
 
-- [ ] HTML report with per-tag breakdown
-- [ ] Baseline comparison (`--compare reports/main.json`) to flag regressions in PRs
-- [ ] Response cache so re-runs only call the judge for changed answers
-- [ ] OpenAI-compatible judge adapter (llama.cpp server, vLLM, LM Studio)
+- [ ] HTML report with a per-tag breakdown
+- [ ] Response cache so re-runs only judge answers that changed
+- [ ] OpenAI-compatible judge (llama.cpp server, vLLM, LM Studio)
+
+## Work with me
+
+I build and evaluate RAG systems. If your assistant gives wrong answers or you need a quality gate before release, I can help you measure where it fails and fix it: test set design, retrieval tuning, and CI setup.
+
+Get in touch through my GitHub profile, [@Toxxxu](https://github.com/Toxxxu), or open an issue.
 
 ## License
 

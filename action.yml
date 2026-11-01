@@ -1,0 +1,60 @@
+name: ragprobe
+description: Test a RAG pipeline in CI. Fails the build when retrieval or answer quality drops.
+author: Toxxxu
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  dataset:
+    description: Path to the JSONL test set.
+    required: true
+  endpoint:
+    description: URL of the RAG service (POST {question} -> {answer, contexts}).
+    required: true
+  args:
+    description: Extra ragprobe run flags, for example "--k 5 --min-recall 0.8 --baseline main/report.json".
+    required: false
+    default: ''
+  out:
+    description: Directory for report.json and report.md.
+    required: false
+    default: ragprobe-report
+
+outputs:
+  report-json:
+    description: Path to report.json.
+    value: ${{ steps.run.outputs.report-json }}
+  report-markdown:
+    description: Path to report.md.
+    value: ${{ steps.run.outputs.report-markdown }}
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 11.20.0
+        standalone: true
+        package_json_file: ragprobe-action-ignores-package-json
+    - name: Build ragprobe
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        pnpm install --frozen-lockfile --silent
+        pnpm run --silent build
+    - name: Run ragprobe
+      id: run
+      shell: bash
+      env:
+        RAGPROBE_CLI: ${{ github.action_path }}/dist/cli.js
+        DATASET: ${{ inputs.dataset }}
+        ENDPOINT: ${{ inputs.endpoint }}
+        ARGS: ${{ inputs.args }}
+        OUT: ${{ inputs.out }}
+      run: |
+        echo "report-json=$OUT/report.json" >> "$GITHUB_OUTPUT"
+        echo "report-markdown=$OUT/report.md" >> "$GITHUB_OUTPUT"
+        # ARGS is split into separate flags on purpose.
+        # shellcheck disable=SC2086
+        node "$RAGPROBE_CLI" run --dataset "$DATASET" --endpoint "$ENDPOINT" --out "$OUT" $ARGS
