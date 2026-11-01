@@ -119,7 +119,7 @@ Here the keyword-search demo is the baseline and the [LangChain example](example
 - name: Start your RAG service
   run: docker compose up -d my-rag-service
 
-- uses: Toxxxu/ragprobe@v0.2.0
+- uses: Toxxxu/ragprobe@v0.3.0
   with:
     dataset: eval/dataset.jsonl
     endpoint: http://localhost:8000/query

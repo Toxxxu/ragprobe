@@ -1,6 +1,6 @@
 {
   "name": "ragprobe",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evaluate any RAG pipeline: retrieval metrics, LLM-as-judge scoring, and CI quality gates. Zero runtime dependencies, runs fully offline with Ollama.",
   "type": "module",
   "license": "MIT",
