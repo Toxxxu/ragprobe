@@ -140,6 +140,7 @@ ragprobe run --dataset <file> --endpoint <url> [options]
   --header "k: v"         extra request header, repeatable
   --judge ollama          enable the LLM judge
   --judge-model <name>    default qwen3:8b
+  --judge-load-timeout <ms>  time allowed to load the model before the run (default 600000)
   --min-recall / --min-mrr / --min-ndcg / --min-faithfulness / --min-relevance / --max-error-rate
   --out <dir>             default ./reports
 ```

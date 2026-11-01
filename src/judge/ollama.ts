@@ -36,6 +36,24 @@ export class OllamaJudge implements Judge {
     return withRetry(() => this.#evaluateOnce(input, signal), { retries: this.#retries, signal });
   }
 
+  /**
+   * Loads the model with the same context size the judge uses. A cold load can
+   * take minutes, far longer than a per-call timeout, and a different num_ctx
+   * would force Ollama to reload the model on the first real request.
+   */
+  async warmUp({ signal }: { signal: AbortSignal }): Promise<void> {
+    const res = await this.#fetch(`${this.#baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      signal,
+      body: JSON.stringify({ model: this.#model, stream: false, options: { num_ctx: this.#numCtx } }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 200);
+      throw new JudgeError(`could not load ${this.#model}: ollama responded ${res.status}${detail ? `: ${detail}` : ''}`);
+    }
+  }
+
   async #evaluateOnce(input: JudgeInput, signal: AbortSignal): Promise<JudgeVerdict> {
     const res = await this.#fetch(`${this.#baseUrl}/api/chat`, {
       method: 'POST',

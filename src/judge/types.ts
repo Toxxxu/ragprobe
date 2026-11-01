@@ -11,4 +11,6 @@ export interface JudgeInput {
 export interface Judge {
   readonly name: string;
   evaluate(input: JudgeInput, options: { signal: AbortSignal }): Promise<JudgeVerdict>;
+  /** Optional one-off setup before the run, e.g. loading a model into memory. */
+  warmUp?(options: { signal: AbortSignal }): Promise<void>;
 }

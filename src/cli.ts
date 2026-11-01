@@ -34,6 +34,7 @@ Judge (optional, local and free):
   --judge ollama            Score answers with a local Ollama model
   --judge-model <name>      Ollama model (default qwen3:8b)
   --ollama-url <url>        Ollama base URL (default http://localhost:11434)
+  --judge-load-timeout <ms> Time allowed to load the model before the run (default 600000)
 
 Quality gate (exit code 1 when any is missed):
   --min-recall <0..1>   --min-mrr <0..1>   --min-ndcg <0..1>
@@ -58,6 +59,7 @@ async function main(argv: string[]): Promise<number> {
       judge: { type: 'string' },
       'judge-model': { type: 'string' },
       'ollama-url': { type: 'string' },
+      'judge-load-timeout': { type: 'string' },
       'min-recall': { type: 'string' },
       'min-mrr': { type: 'string' },
       'min-ndcg': { type: 'string' },
@@ -92,6 +94,12 @@ async function main(argv: string[]): Promise<number> {
 
   const controller = new AbortController();
   process.once('SIGINT', () => controller.abort(new Error('Interrupted')));
+
+  if (judge?.warmUp) {
+    log('Loading judge model (the first load can take a few minutes)...\n');
+    const timeout = AbortSignal.timeout(int(values['judge-load-timeout'], 'judge-load-timeout', 600_000));
+    await judge.warmUp({ signal: AbortSignal.any([controller.signal, timeout]) });
+  }
 
   const report = await runEvaluation(cases, {
     pipeline,

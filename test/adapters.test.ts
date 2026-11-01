@@ -95,4 +95,17 @@ describe('OllamaJudge', () => {
     await assert.rejects(judge.evaluate({ question: 'q', answer: 'a', contexts: [] }, { signal }), JudgeError);
     assert.equal(fetch.calls, 3);
   });
+
+  it('warms up the model with the same context size it judges with', async () => {
+    const fetch = fakeFetch((url, body) => {
+      assert.equal(url, 'http://localhost:11434/api/generate');
+      assert.deepEqual(body, { model: 'qwen3:8b', stream: false, options: { num_ctx: 4096 } });
+      return json({ done: true });
+    });
+    await new OllamaJudge({ numCtx: 4096, fetch }).warmUp({ signal });
+    assert.equal(fetch.calls, 1);
+
+    const missing = new OllamaJudge({ fetch: fakeFetch(() => json({ error: 'model not found' }, 404)) });
+    await assert.rejects(missing.warmUp({ signal }), /could not load qwen3:8b: ollama responded 404/);
+  });
 });
