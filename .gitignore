@@ -6,3 +6,4 @@ coverage
 .env
 __pycache__
 .venv
+data
